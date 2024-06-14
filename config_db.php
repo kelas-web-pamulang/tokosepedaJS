@@ -1,21 +1,51 @@
 <?php
+require 'vendor/autoload.php';
 
-class ConfigDB
-{
+use Sentry\SentrySdk;
+
+SentrySdk::init(['dsn' => 'https://examplePublicKey@o0.ingest.sentry.io/0']);
+
+// Handler untuk error PHP
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+    \Sentry\captureMessage("Error: $errstr", Sentry\Severity::error());
+});
+
+// Handler untuk exception
+set_exception_handler(function ($exception) {
+    \Sentry\captureException($exception);
+});
+
+// Handler untuk fatal error
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null &&
+        in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        \Sentry\captureMessage("Fatal Error: {$error['message']}", Sentry\Severity::fatal());
+    }
+});
+
+// Contoh kode aplikasi PHP Anda dimulai di sini
+// ...
+?>
+
+<?php
+class ConfigDB {
     private $host = 'localhost';
-    private $db_name = 'db_sepeda'; // Updated to reflect the bicycle shop database
+    private $db_name = 'db_sepeda';
     private $username = 'root';
     private $password = '';
-    private $conn;
+    public $conn;
 
-    public function connect()
-    {
-        $this->conn = new mysqli($this->host, $this->username, $this->password, $this->db_name);
-
-        if ($this->conn->connect_error) {
-            die("Connection failed: " . $this->conn->connect_error);
+    public function connect() {
+        $this->conn = null;
+        try {
+            $this->conn = new mysqli($this->host, $this->username, $this->password, $this->db_name);
+            if ($this->conn->connect_error) {
+                throw new Exception('Connection error: ' . $this->conn->connect_error);
+            }
+        } catch (Exception $e) {
+            die('Database connection error: ' . $e->getMessage());
         }
-
         return $this->conn;
     }
 
@@ -23,34 +53,8 @@ class ConfigDB
         $this->conn->close();
     }
 
-    public function select($table, $where = [])
-    {
-        $query = "SELECT id_sepeda, nama_sepeda, merk, tahun_produksi, id_tipe, id_kategori, stok, harga, created_at FROM $table WHERE deleted_at IS NULL";
-
-        foreach ($where as $key => $value) {
-            $query .= " $key '$value'";
-        }
-
-        $result = $this->conn->query($query);
-
-        $data = [];
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $data[] = $row;
-            }
-        }
-        return $data;
-    }
-
-    public function update($table, $data, $id)
-    {
-        $updated_at = date('Y-m-d H:i:s');
-        $query = "UPDATE $table SET ";
-        foreach ($data as $key => $value) {
-            $query .= "$key = '$value', ";
-        }
-        $query .= "updated_at = '$updated_at' WHERE id_sepeda='$id'";
-
-        return $this->conn->query($query);
+    public function update($table, $data, $id) {
+        // Implementation of update method
     }
 }
+?>
