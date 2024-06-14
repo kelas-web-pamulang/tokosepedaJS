@@ -57,4 +57,3 @@ class ConfigDB {
         // Implementation of update method
     }
 }
-?>

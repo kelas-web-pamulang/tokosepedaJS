@@ -8,8 +8,16 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Aktifkan display errors untuk debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $db = new ConfigDB();
 $conn = $db->connect();
+if ($conn->connect_error) {
+    die("Koneksi ke database gagal: " . $conn->connect_error);
+}
 
 // Mendapatkan id sepeda dari parameter URL
 $id_sepeda = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -42,12 +50,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Menambah data transaksi
             $insert_transaksi = $conn->prepare("INSERT INTO transaksi (id_sepeda, nama_pembeli, jumlah, tanggal) VALUES (?, ?, ?, NOW())");
             $insert_transaksi->bind_param("isi", $id_sepeda, $nama_pembeli, $jumlah);
-            $insert_transaksi->execute();
+            if (!$insert_transaksi->execute()) {
+                throw new Exception("Gagal menambah transaksi: " . $insert_transaksi->error);
+            }
 
             // Mengurangi stok sepeda
             $update_stok = $conn->prepare("UPDATE sepeda SET stok = ? WHERE id_sepeda = ?");
             $update_stok->bind_param("ii", $new_stok, $id_sepeda);
-            $update_stok->execute();
+            if (!$update_stok->execute()) {
+                throw new Exception("Gagal memperbarui stok: " . $update_stok->error);
+            }
 
             // Komit transaksi
             $conn->commit();

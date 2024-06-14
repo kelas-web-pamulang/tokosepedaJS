@@ -1,7 +1,8 @@
+@@ -0,0 +1,7 @@
 <?php
 session_start();
-session_unset();
 session_destroy();
-header("Location: login.php");
-exit;
-?>
+setcookie('clientId', '', time() - 3600, '/');
+setcookie('clientSecret', '', time() - 3600, '/');
+
+header('Location: login.php');
