@@ -1,9 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+date_default_timezone_set('Asia/Jakarta');
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 require_once 'config_db.php';
 
@@ -12,27 +11,23 @@ $conn = $db->connect();
 
 if (isset($_GET['id'])) {
     $id_sepeda = $_GET['id'];
+    $deleted_at = date('Y-m-d H:i:s');
 
-    // Mulai transaksi
-    $conn->begin_transaction();
+    // Query untuk menghapus data (soft delete dengan mengisi kolom deleted_at)
+    $query = "UPDATE sepeda SET deleted_at = '$deleted_at' WHERE id_sepeda = '$id_sepeda'";
 
-    // Query untuk menghapus data sepeda
-    $query = $db->delete('sepeda', $id_sepeda);
-
-    if ($query) {
-        // Commit transaksi jika berhasil
-        $conn->commit();
-        echo "<div class='alert alert-success mt-3' role='alert'>Data berhasil dihapus</div>";
+    if ($conn->query($query) === TRUE) {
+        $message = "Data berhasil dihapus";
+        $alert_type = "success";
     } else {
-        // Rollback transaksi jika gagal
-        $conn->rollback();
-        echo "<div class='alert alert-danger mt-3' role='alert'>Error: " . $conn->error . "</div>";
+        $message = "Error: " . $query . "<br>" . $conn->error;
+        $alert_type = "danger";
     }
-} else {
-    echo "<div class='alert alert-danger mt-3' role='alert'>ID tidak ditemukan</div>";
-}
 
-$conn->close();
-header("Location: index.php");
-exit;
-?>
+    $conn->close();
+    header("Location: index.php?message=$message&alert_type=$alert_type");
+    exit;
+} else {
+    header("Location: index.php?message=ID tidak ditemukan&alert_type=danger");
+    exit;
+}

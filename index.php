@@ -3,10 +3,20 @@ session_start();
 require_once 'config_db.php';
 require 'vendor/autoload.php';
 
-\Sentry\init(['dsn' => 'https://examplePublicKey@o0.ingest.sentry.io/0' ]);
+\Sentry\init([
+    'dsn' => 'https://3cbd8d10cef46bbfebaca74f8f298058@o4507428775133184.ingest.us.sentry.io/4507429260296192',
+    'traces_sample_rate' => 1.0,
+    'profiles_sample_rate' => 1.0,
+]);
 
 // Periksa apakah pengguna sudah login
 $loggedIn = isset($_SESSION['user_id']);
+
+// Pastikan tidak ada session yang aktif
+if (!$loggedIn) {
+    header('Location: login.php');
+    exit();
+}
 
 // Fungsi untuk menampilkan pesan kesalahan
 function showError($message) {
@@ -37,7 +47,9 @@ register_shutdown_function('handleShutdown');
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Toko Sepeda</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <style>
         body {
             background-image: url('images/background1.jpg');
@@ -73,7 +85,6 @@ register_shutdown_function('handleShutdown');
                 <a href="register.php" class="btn btn-secondary">Register</a>
             <?php endif; ?>
         </div>
-        <!-- Konten halaman lainnya -->
     </div>
 
     <div class="container">
@@ -130,9 +141,8 @@ register_shutdown_function('handleShutdown');
                             $conditional['AND merk LIKE'] = "%$search%";
                         }
                     } else if (isset($_GET['delete'])) {
-                        $query = $db->update('sepeda', [
-                            'deleted_at' => date('Y-m-d H:i:s')
-                        ], $_GET['delete']);
+                        $query = "UPDATE sepeda SET deleted_at = NOW() WHERE id_sepeda = " . $_GET['delete'];
+                        $conn->query($query);
                     }
 
                     $query = "SELECT s.id_sepeda, s.nama_sepeda, s.merk, s.tahun_produksi, t.nama_tipe, 
